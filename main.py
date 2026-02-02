@@ -76,9 +76,17 @@ async def get_all_tools():
                 "transport": "streamable_http",
                 "url": "https://mcp.context7.com/mcp",
             },
+            "mcp_custom": {
+                'transport': 'http',
+                'url': 'http://127.0.0.1:8001/mcp'
+            }
         }
     )
 
+    async def read_system_status():
+        async with mcp_client.session("mcp_custom") as session:
+            return await session.read_resource("system://status"), await session.get_prompt('security_check', {'action': '123'})
+    print(await read_system_status())
     # Получаем MCP инструменты
     mcp_tools = await mcp_client.get_tools()
 
@@ -105,7 +113,13 @@ async def main():
     result = await agent.ainvoke({"messages": [{'role': 'system',
                                                 'content': "Ты дружелюбный ассистент, который может генерировать фейковых пользователей, \
     выполнять вычисления и делиться интересными фактами.",},
-                                               {"role": "user", "content": "Сгенерируй мне случайного пользователя"}]})
+                                               # {"role": "user", "content": "Сгенерируй мне случайного пользователя. Посчитай, сколько ему лет, если он родился в 2001 году"}]})
+                                               {"role": "user", "content": "Какой статус системы?"}]})
+    print("=== Полная история сообщений ===")
+    for i, msg in enumerate(result["messages"]):
+        print(f"{i + 1}. {type(msg).__name__}: {getattr(msg, 'content', None)}")
+        if hasattr(msg, "tool_calls") and msg.tool_calls:
+            print(f"   Tool calls: {msg.tool_calls}")
     print(result["messages"][-1].content)
 
 
